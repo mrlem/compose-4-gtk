@@ -7,13 +7,16 @@ import androidx.compose.runtime.setValue
 import io.github.compose4gtk.adw.application
 import io.github.compose4gtk.adw.components.ApplicationWindow
 import io.github.compose4gtk.adw.components.HeaderBar
-import io.github.compose4gtk.gtk.components.*
+import io.github.compose4gtk.gtk.components.Button
+import io.github.compose4gtk.gtk.components.HorizontalBox
+import io.github.compose4gtk.gtk.components.Label
+import io.github.compose4gtk.gtk.components.ListView
+import io.github.compose4gtk.gtk.components.ScrolledWindow
+import io.github.compose4gtk.gtk.components.VerticalBox
+import io.github.compose4gtk.gtk.components.rememberMultiSelectionModel
 import io.github.compose4gtk.modifier.Modifier
 import io.github.compose4gtk.modifier.expand
-import org.gnome.gio.ListStore
 import org.gnome.gobject.GObject
-import org.gnome.gtk.MultiSelection
-import org.gnome.gtk.SelectionModel
 
 fun main(args: Array<String>) {
     application("my.example.hello-app", args) {
@@ -21,6 +24,11 @@ fun main(args: Array<String>) {
             VerticalBox {
                 HeaderBar(title = { Label("ListView") })
                 var itemSize by remember { mutableIntStateOf(5) }
+                val items = remember(itemSize) {
+                    List(itemSize) { index ->
+                        CustomItem("Custom item #$index")
+                    }
+                }
                 var show by remember { mutableStateOf(true) }
                 HorizontalBox(Modifier.expand()) {
                     if (show) {
@@ -30,8 +38,9 @@ fun main(args: Array<String>) {
                             }
                         }
                         Panel("Custom model (multiple selection)") {
-                            val model = createModel(itemSize)
-                            ListView(model) { customItem ->
+                            ListView(
+                                model = rememberMultiSelectionModel(items),
+                            ) { customItem ->
                                 Label(customItem.name)
                             }
                         }
@@ -62,19 +71,7 @@ fun main(args: Array<String>) {
     }
 }
 
-private class CustomItem(val name: String) : GObject()
-
-@Composable
-private fun createModel(count: Int): SelectionModel<CustomItem> {
-    val model = remember { ListStore<CustomItem>() }
-    while (model.size > count) {
-        model.removeLast()
-    }
-    while (model.size < count) {
-        model.append(CustomItem("Custom item #${model.size}"))
-    }
-    return remember { MultiSelection(model) }
-}
+private data class CustomItem(val name: String) : GObject()
 
 @Composable
 private fun Panel(title: String, content: @Composable () -> Unit) {
