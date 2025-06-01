@@ -110,20 +110,7 @@ fun <M : SelectionModel<ListIndexModel.ListIndex>> ListView(
     modifier: Modifier = Modifier,
     child: @Composable (index: Int) -> Unit,
 ): M {
-    val dataModel = remember {
-        ListStore<ListIndexModel.ListIndex>()
-    }
-    remember(items) {
-        while (dataModel.size > items) {
-            dataModel.removeLast()
-        }
-        while (dataModel.size < items) {
-            dataModel.append(ListIndexModel.ListIndex(dataModel.size))
-        }
-    }
-    val selectionModel = remember(dataModel) {
-        selectionMode.createSelectionModel(dataModel)
-    }
+    val selectionModel = rememberSelectionModel(itemsCount = items, selectionMode = selectionMode)
     ListView(selectionModel, modifier) {
         child(it.index)
     }
@@ -188,6 +175,29 @@ fun <Item : GObject> rememberMultiSelectionModel(
     )
 
 @Composable
+fun <M : SelectionModel<ListIndexModel.ListIndex>> rememberSelectionModel(
+    itemsCount: Int,
+    selectionMode: SelectionMode<M>,
+): M {
+    val dataModel = remember {
+        ListStore<ListIndexModel.ListIndex>()
+    }
+    remember(itemsCount) {
+        while (dataModel.size > itemsCount) {
+            dataModel.removeLast()
+        }
+        while (dataModel.size < itemsCount) {
+            dataModel.append(ListIndexModel.ListIndex(dataModel.size))
+        }
+    }
+    val selectionModel = remember(dataModel) {
+        selectionMode.createSelectionModel(dataModel)
+    }
+
+    return selectionModel
+}
+
+@Composable
 private fun <Item : GObject, Model : SelectionModel<Item>> rememberSelectionModel(
     items: List<Item>,
     selectionModelFactory: (model: ListModel<Item>) -> Model,
@@ -216,7 +226,7 @@ private fun <Item : GObject, Model : SelectionModel<Item>> rememberSelectionMode
 /**
  * Creates a [SignalListItemFactory] where each element is provided by [child].
  */
-private fun <T : GObject> createListItemFactory(
+internal fun <T : GObject> createListItemFactory(
     compositionContext: CompositionContext,
     child: @Composable (T) -> Unit,
 ): SignalListItemFactory {
